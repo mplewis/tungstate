@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <Arduino_FreeRTOS.h>
 #include <Bounce2.h>
-#include <Shifty.h>
+#include <DigitalIO.h>
 
 #define BEEP_PIN 3
 #define LED_PIN 10
@@ -9,14 +9,17 @@
 #define CLK_PIN 7
 #define DATA_PIN 8
 
-const byte SEGMENT_MAP_DIGIT[] = {0xC0, 0xF9, 0xA4, 0xB0, 0x99,
-                                  0x92, 0x82, 0xF8, 0X80, 0X90};
+const byte ALL_DIGITS_OFF = 0x00;
+const byte ALL_SEGMENTS_OFF = 0xFF;
+const byte DIGIT_AT_INDEX[] = {0x01, 0x02, 0x04, 0x08};
+const byte NUM_TO_SEGMENTS[] = {0xC0, 0xF9, 0xA4, 0xB0, 0x99,
+                                0x92, 0x82, 0xF8, 0X80, 0X90};
 
 Bounce button1 = Bounce();
 Bounce button2 = Bounce();
 Bounce button3 = Bounce();
 
-Shifty segment;
+SoftSPI<DATA_PIN, DATA_PIN, CLK_PIN, 0> display;
 
 void setup() {
   Serial.begin(115200);
@@ -24,8 +27,13 @@ void setup() {
   pinMode(BEEP_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
 
-  segment.setBitCount(16);
-  segment.setPins(DATA_PIN, CLK_PIN, LATCH_PIN);
+  pinMode(LATCH_PIN, OUTPUT);
+  display.begin();
+
+  digitalWrite(LATCH_PIN, LOW);
+  display.send(ALL_SEGMENTS_OFF);
+  display.send(ALL_DIGITS_OFF);
+  digitalWrite(LATCH_PIN, HIGH);
 
   digitalWrite(BEEP_PIN, HIGH);
 
@@ -35,10 +43,6 @@ void setup() {
   button2.interval(20);
   button3.attach(A3, INPUT_PULLUP);
   button3.interval(20);
-
-  for (uint8_t i = 8; i < 16; i++) {
-    segment.writeBit(i, HIGH);
-  }
 
   xTaskCreate(SpinSegments, "SpinSegments", 100, NULL, 3, NULL);
   xTaskCreate(CheckButtons, "CheckButtons", 100, NULL, 2, NULL);
@@ -71,12 +75,21 @@ void BeepOnDemand(void* _) {
   }
 }
 
-uint8_t seg = 0;
+// 0-7: A-G + DP, on = LOW
+// 8, 9, 10, 11: segments from left to right, on = HIGH
+
+uint8_t digit = 0;
+uint8_t count = 0;
 void SpinSegments(void* _) {
   while (true) {
-    segment.writeBit(seg, HIGH);
-    seg = (seg + 1) % 8;
-    segment.writeBit(seg, LOW);
+    digitalWrite(LATCH_PIN, LOW);
+    display.send(NUM_TO_SEGMENTS[count]);
+    display.send(DIGIT_AT_INDEX[digit]);
+    digitalWrite(LATCH_PIN, HIGH);
+
+    digit = (digit + 1) % 4;
+    count = (count + 1) % 10;
+
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 }
