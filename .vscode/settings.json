@@ -1,6 +1,0 @@
-{
-    "terminal.integrated.env.osx": {
-        "PATH": "/Users/mplewis/.platformio/penv/bin:/Users/mplewis/.platformio/penv:/Users/mplewis/.rvm/gems/ruby-2.2.2/bin:/Users/mplewis/.rvm/gems/ruby-2.2.2@global/bin:/Users/mplewis/.rvm/rubies/ruby-2.2.2/bin:/Users/mplewis/.nvm/versions/node/v4.4.7/bin:/usr/local/Cellar/pyenv-virtualenv/1.1.3/shims:/Users/mplewis/.pyenv/shims:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/texbin:/usr/local/go/bin:/usr/local/share/npm/bin:/opt/X11/bin:/usr/local/CrossPack-AVR/bin:/usr/local/msp430-toolchain/bin:/Users/mplewis/Applications/dart/dart-sdk/bin:/usr/local/git/bin:/Users/mplewis/.go/bin:/Users/mplewis/.rvm/bin:/usr/local/opt/fzf/bin",
-        "PLATFORMIO_CALLER": "vscode"
-    }
-}
