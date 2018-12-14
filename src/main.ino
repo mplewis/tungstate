@@ -60,13 +60,6 @@ void delay(int ms) { vTaskDelay(ms / portTICK_PERIOD_MS); }
 
 void BeepOnDemand(void* _) {
   while (true) {
-    Serial.println(F("BeepOnDemand"));
-
-    if (shouldBeep)
-      Serial.println("beep!");
-    else
-      Serial.println("nope");
-
     if (shouldBeep) {
       digitalWrite(BEEP_PIN, LOW);
       delay(50);
@@ -74,7 +67,7 @@ void BeepOnDemand(void* _) {
       shouldBeep = false;
     }
 
-    delay(50);
+    delay(100);
   }
 }
 
@@ -99,8 +92,6 @@ void SpinSegments(void* _) {
 
 void CheckButtons(void* _) {
   while (true) {
-    Serial.println(F("CheckButtons"));
-
     button1.update();
     button2.update();
     button3.update();
@@ -109,7 +100,7 @@ void CheckButtons(void* _) {
       digitalWrite(LED_PIN, !digitalRead(LED_PIN));
     }
 
-    delay(20);
+    delay(30);
   }
 }
 
