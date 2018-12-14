@@ -8,13 +8,23 @@
 #define CLK_PIN 7
 #define DATA_PIN 8
 
+#define MODE_COUNT 8
+
+// 4 x 7-Seg Display
+
 const byte ALL_DIGITS_OFF = 0x00;
 const byte ALL_SEGMENTS_OFF = 0xFF;
 const byte DIGIT_AT_INDEX[] = {0x01, 0x02, 0x04, 0x08};
 const byte NUM_TO_SEGMENTS[] = {0xC0, 0xF9, 0xA4, 0xB0, 0x99,
                                 0x92, 0x82, 0xF8, 0X80, 0X90};
 
+// Task State
+
 byte displayBytes[] = {0, 0, 0, 0};
+bool shouldBeep = false;
+byte mode = 0;
+
+// Hardware
 
 Bounce button1 = Bounce();
 Bounce button2 = Bounce();
@@ -22,18 +32,7 @@ Bounce button3 = Bounce();
 
 SoftSPI<DATA_PIN, DATA_PIN, CLK_PIN, 0> display;
 
-void SetNumber(int num) {
-  for (byte i = 0; i < 4; i++) {
-    displayBytes[3 - i] = NUM_TO_SEGMENTS[num % 10];
-    num = num / 10;
-  }
-}
-
-int currNum = 123;
-void ShowNextNumber() {
-  currNum += 1;
-  SetNumber(currNum);
-}
+// Setup and Loop
 
 void setup() {
   Serial.begin(115200);
@@ -62,14 +61,16 @@ void setup() {
   xTaskCreate(SpinSegments, "SpinSegments", 100, NULL, 1, NULL);
   xTaskCreate(IdleTask, "IdleTask", 100, NULL, 0, NULL);
 
-  SetNumber(currNum);
+  ShowMode(mode + 1);
 }
 
 void loop() {}
 
-bool shouldBeep = false;
-void beep() { shouldBeep = true; }
+// Helpers
+
 void defer(int ms) { vTaskDelay(ms / portTICK_PERIOD_MS); }
+
+// Tasks
 
 void BeepOnDemand(void* _) {
   while (true) {
@@ -87,14 +88,13 @@ void BeepOnDemand(void* _) {
 // 0-7: A-G + DP, on = LOW
 // 8, 9, 10, 11: segments from left to right, on = HIGH
 
-uint8_t digit = 0;
+byte digit = 0;
 void SpinSegments(void* _) {
   while (true) {
     digitalWrite(LATCH_PIN, LOW);
     display.send(displayBytes[digit]);
     display.send(DIGIT_AT_INDEX[digit]);
     digitalWrite(LATCH_PIN, HIGH);
-
     digit = (digit + 1) % 4;
 
     defer(10);
@@ -107,8 +107,8 @@ void CheckButtons(void* _) {
     button2.update();
     button3.update();
     if (button1.fell()) {
-      beep();
-      ShowNextNumber();
+      Beep();
+      NextMode();
     }
 
     defer(30);
@@ -117,4 +117,20 @@ void CheckButtons(void* _) {
 
 void IdleTask(void* _) {
   while (true) delay(1);
+}
+
+// Public Functions
+
+void Beep() { shouldBeep = true; }
+
+void ShowMode(int num) {
+  for (byte i = 0; i < 4; i++) {
+    displayBytes[3 - i] = NUM_TO_SEGMENTS[num % 10];
+    num = num / 10;
+  }
+}
+
+void NextMode() {
+  mode = (mode + 1) % MODE_COUNT;
+  ShowMode(mode + 1);
 }
