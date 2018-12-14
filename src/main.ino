@@ -15,6 +15,8 @@ const byte DIGIT_AT_INDEX[] = {0x01, 0x02, 0x04, 0x08};
 const byte NUM_TO_SEGMENTS[] = {0xC0, 0xF9, 0xA4, 0xB0, 0x99,
                                 0x92, 0x82, 0xF8, 0X80, 0X90};
 
+byte displayDigits[] = {0x00, 0x01, 0x02, 0x03};
+
 Bounce button1 = Bounce();
 Bounce button2 = Bounce();
 Bounce button3 = Bounce();
@@ -44,9 +46,9 @@ void setup() {
   button3.attach(A3, INPUT_PULLUP);
   button3.interval(20);
 
-  xTaskCreate(SpinSegments, "SpinSegments", 100, NULL, 3, NULL);
-  xTaskCreate(CheckButtons, "CheckButtons", 100, NULL, 2, NULL);
-  xTaskCreate(BeepOnDemand, "BeepOnDemand", 100, NULL, 1, NULL);
+  xTaskCreate(CheckButtons, "CheckButtons", 100, NULL, 3, NULL);
+  xTaskCreate(BeepOnDemand, "BeepOnDemand", 100, NULL, 2, NULL);
+  xTaskCreate(SpinSegments, "SpinSegments", 100, NULL, 1, NULL);
   xTaskCreate(IdleTask, "IdleTask", 100, NULL, 0, NULL);
 }
 
@@ -54,6 +56,7 @@ void loop() {}
 
 bool shouldBeep = false;
 void beep() { shouldBeep = true; }
+void delay(int ms) { vTaskDelay(ms / portTICK_PERIOD_MS); }
 
 void BeepOnDemand(void* _) {
   while (true) {
@@ -66,12 +69,12 @@ void BeepOnDemand(void* _) {
 
     if (shouldBeep) {
       digitalWrite(BEEP_PIN, LOW);
-      vTaskDelay(50 / portTICK_PERIOD_MS);
+      delay(50);
       digitalWrite(BEEP_PIN, HIGH);
       shouldBeep = false;
     }
 
-    vTaskDelay(50 / portTICK_PERIOD_MS);
+    delay(50);
   }
 }
 
@@ -83,14 +86,14 @@ uint8_t count = 0;
 void SpinSegments(void* _) {
   while (true) {
     digitalWrite(LATCH_PIN, LOW);
-    display.send(NUM_TO_SEGMENTS[count]);
+    display.send(NUM_TO_SEGMENTS[displayDigits[digit]]);
     display.send(DIGIT_AT_INDEX[digit]);
     digitalWrite(LATCH_PIN, HIGH);
 
     digit = (digit + 1) % 4;
     count = (count + 1) % 10;
 
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    delay(10);
   }
 }
 
@@ -106,7 +109,7 @@ void CheckButtons(void* _) {
       digitalWrite(LED_PIN, !digitalRead(LED_PIN));
     }
 
-    vTaskDelay(20 / portTICK_PERIOD_MS);
+    delay(20);
   }
 }
 
