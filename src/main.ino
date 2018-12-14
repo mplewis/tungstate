@@ -69,18 +69,18 @@ void loop() {}
 
 bool shouldBeep = false;
 void beep() { shouldBeep = true; }
-void delay(int ms) { vTaskDelay(ms / portTICK_PERIOD_MS); }
+void defer(int ms) { vTaskDelay(ms / portTICK_PERIOD_MS); }
 
 void BeepOnDemand(void* _) {
   while (true) {
     if (shouldBeep) {
       digitalWrite(BEEP_PIN, LOW);
-      delay(50);
+      defer(50);
       digitalWrite(BEEP_PIN, HIGH);
       shouldBeep = false;
     }
 
-    delay(100);
+    defer(100);
   }
 }
 
@@ -97,7 +97,7 @@ void SpinSegments(void* _) {
 
     digit = (digit + 1) % 4;
 
-    delay(10);
+    defer(10);
   }
 }
 
@@ -111,7 +111,7 @@ void CheckButtons(void* _) {
       ShowNextNumber();
     }
 
-    delay(30);
+    defer(30);
   }
 }
 
