@@ -4,7 +4,6 @@
 #include <DigitalIO.h>
 
 #define BEEP_PIN 3
-#define LED_PIN 10
 #define LATCH_PIN 4
 #define CLK_PIN 7
 #define DATA_PIN 8
@@ -15,7 +14,7 @@ const byte DIGIT_AT_INDEX[] = {0x01, 0x02, 0x04, 0x08};
 const byte NUM_TO_SEGMENTS[] = {0xC0, 0xF9, 0xA4, 0xB0, 0x99,
                                 0x92, 0x82, 0xF8, 0X80, 0X90};
 
-byte displayDigits[] = {0x00, 0x01, 0x02, 0x03};
+byte displayBytes[] = {0, 0, 0, 0};
 
 Bounce button1 = Bounce();
 Bounce button2 = Bounce();
@@ -23,13 +22,25 @@ Bounce button3 = Bounce();
 
 SoftSPI<DATA_PIN, DATA_PIN, CLK_PIN, 0> display;
 
+void SetNumber(int num) {
+  for (byte i = 0; i < 4; i++) {
+    displayBytes[3 - i] = NUM_TO_SEGMENTS[num % 10];
+    num = num / 10;
+  }
+}
+
+int currNum = 123;
+void ShowNextNumber() {
+  currNum += 1;
+  SetNumber(currNum);
+}
+
 void setup() {
   Serial.begin(115200);
 
   pinMode(BEEP_PIN, OUTPUT);
-  pinMode(LED_PIN, OUTPUT);
-
   pinMode(LATCH_PIN, OUTPUT);
+
   display.begin();
 
   digitalWrite(LATCH_PIN, LOW);
@@ -50,6 +61,8 @@ void setup() {
   xTaskCreate(BeepOnDemand, "BeepOnDemand", 100, NULL, 2, NULL);
   xTaskCreate(SpinSegments, "SpinSegments", 100, NULL, 1, NULL);
   xTaskCreate(IdleTask, "IdleTask", 100, NULL, 0, NULL);
+
+  SetNumber(currNum);
 }
 
 void loop() {}
@@ -75,16 +88,14 @@ void BeepOnDemand(void* _) {
 // 8, 9, 10, 11: segments from left to right, on = HIGH
 
 uint8_t digit = 0;
-uint8_t count = 0;
 void SpinSegments(void* _) {
   while (true) {
     digitalWrite(LATCH_PIN, LOW);
-    display.send(NUM_TO_SEGMENTS[displayDigits[digit]]);
+    display.send(displayBytes[digit]);
     display.send(DIGIT_AT_INDEX[digit]);
     digitalWrite(LATCH_PIN, HIGH);
 
     digit = (digit + 1) % 4;
-    count = (count + 1) % 10;
 
     delay(10);
   }
@@ -97,7 +108,7 @@ void CheckButtons(void* _) {
     button3.update();
     if (button1.fell()) {
       beep();
-      digitalWrite(LED_PIN, !digitalRead(LED_PIN));
+      ShowNextNumber();
     }
 
     delay(30);
